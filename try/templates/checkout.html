@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - My Shop</title>
+    <style>
+        /* Basic Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Body and Main Styling */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        /* Header and Navigation Bar */
+        header {
+            background: linear-gradient(to bottom, #00bf63, #000000);
+            color: #fff;
+            padding: 50px 0; /* Spacing for header */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+        }
+
+        /* Navigation Bar */
+        nav ul {
+            list-style-type: none; /* Remove bullets */
+            display: flex;
+            justify-content: center; /* Center items */
+            gap: 15px; /* Adjust gap for compactness */
+            padding: 0;
+            margin: 0;
+        }
+
+        nav ul li {
+            display: inline;
+        }
+
+        nav ul li a {
+            color: #fff;
+            text-decoration: none; /* Remove underline */
+            font-weight: 600; /* Slightly lighter font weight */
+            font-size: 1rem; /* Standard size for readability */
+            padding: 8px 12px; /* Reduced padding for compactness */
+            border: 2px solid transparent; /* Transparent border for hover effect */
+            transition: background-color 0.3s ease, border-color 0.3s ease; /* Smooth transitions */
+        }
+
+        nav ul li a:hover {
+            background-color: #008c4a; /* Slightly darker green */
+            border-radius: 8px; /* Rounded corners for buttons */
+            border-color: #fff; /* White border for emphasis */
+        }
+
+        /* Checkout Page Styling */
+        .checkout-container {
+            max-width: 800px;
+            margin: 40px auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .checkout-container h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .cart-items,
+        .user-address,
+        .payment-method,
+        .order-summary {
+            margin-bottom: 20px;
+        }
+
+        .cart-item {
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+
+        .cart-item p {
+            margin: 5px 0;
+        }
+
+        .user-address button {
+            background-color: #00bf63;
+            color: #fff;
+            padding: 8px 12px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .user-address button:hover {
+            background-color: #008c4a;
+        }
+
+        .payment-method select,
+        .order-summary p {
+            font-size: 1rem;
+            padding: 8px;
+            width: 100%;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        .order-summary {
+            font-size: 1.2rem;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>My Shop</h1>
+        <nav>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/products">Products</a></li>
+                <li><a href="/cart">Cart</a></li>
+                <li><a href="/contact">Contact</a></li>
+                <li><a href="/dashboard">Seller Dashboard</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="checkout-container">
+        <h2>Checkout</h2>
+
+        <div class="cart-items">
+            {% for item in cart_items %}
+            <p><strong>Product:</strong> {{ item['product_name'] }}</p>
+            <p><strong>Quantity:</strong> {{ item['quantity'] }}</p>
+            <p><strong>Price:</strong> ${{ item['price'] }}</p>
+            <p><strong>Subtotal:</strong> ${{ item['subtotal'] }}</p>
+            {% endfor %}
+        </div>
+
+        <div class="user-address">
+            <h3>Your Address</h3>
+            <p>{{ current_user.address }}</p>
+        </div>
+
+        <div class="payment-method">
+            <h3>Select Payment Method</h3>
+            <select id="payment-method">
+                <option value="credit_card">Credit Card</option>
+                <option value="paypal">PayPal</option>
+                <option value="bank_transfer">Bank Transfer</option>
+            </select>
+        </div>
+
+        <div class="order-summary">
+            <h3>Order Summary</h3>
+            <p><strong>Total Price:</strong> ${{ total_price }}</p> <!-- Calculate total of cart items -->
+        </div>
+
+        <button onclick="placeOrder()">Place Order</button>
+    </div>
+
+    <script>
+        function placeOrder() {
+            const paymentMethod = document.getElementById('payment-method').value;
+            const shippingAddress = '{{ current_user.address }}';  // Optionally use an edit address form
+
+            // Collect order information
+            const orderData = {
+                payment_method: paymentMethod,
+                shipping_address: shippingAddress,
+                cart_items: {{ cart_items | tojson }},
+                user_id: {{ current_user.id }}
+            };
+
+            // Send the order data to your backend
+            fetch('/place_order', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(orderData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Order placed successfully!');
+                    window.location.href = '/order_confirmation/' + data.order_id;
+                } else {
+                    alert('There was an error placing your order.');
+                }
+            })
+            .catch(error => {
+                console.error('Error placing order:', error);
+                alert('Error placing order. Please try again later.');
+            });
+        }
+    </script>
+</body>
+
+</html>
